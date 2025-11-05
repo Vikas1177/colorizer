@@ -1,6 +1,11 @@
 # IMAGE COLORIZER
-This is an image colorizer which convert black and white image to rgb image.
-I used the similar architecture as this paper [Image Colorization using Generative Adversarial Networks](https://arxiv.org/abs/1803.05400)
+This project implements an image colorizer that converts black and white (grayscale) images into RGB (color) images. The model architecture is inspired by the paper Image Colorization using Generative Adversarial Networks.
+
+## Features
+- Converts black and white images to colorized RGB outputs
+- Uses a GAN-based architecture for realistic colorization
+
+Includes sample results showcasing the model's performance
 ## To know more read this
 [ppt](ppt.pptx)
 ## Results from my colorizer
