@@ -41,49 +41,49 @@ The GAN is trained with two competing objectives: the discriminator learns to di
 
 Let:
 
-- \(x\) be the grayscale input image,
-- \(y\) be the corresponding real RGB image,
-- \(G(x)\) be the generated RGB image,
-- \(D(\cdot)\) be the discriminator,
-- \(\lambda = 100\) be the reconstruction-loss weight.
+- $x$ be the grayscale input image,
+- $y$ be the corresponding real RGB image,
+- $G(x)$ be the generated RGB image,
+- $D(\cdot)$ be the discriminator,
+- $\lambda = 100$ be the reconstruction-loss weight.
 
 ### Discriminator loss
 
 The discriminator uses binary cross-entropy (BCE). Real labels are smoothed from `1.0` to `0.9` using one-sided label smoothing, while generated-image labels are `0`.
 
-\[
+$$
 \mathcal{L}_{D} = \operatorname{BCE}(D(y), 0.9)
 + \operatorname{BCE}(D(G(x)), 0)
-\]
+$$
 
 ### Generator loss
 
 The generator combines adversarial BCE loss with an L1 reconstruction loss:
 
-\[
+$$
 \mathcal{L}_{G} = \mathcal{L}_{adv} + \lambda\mathcal{L}_{L1}
-\]
+$$
 
 where
 
-\[
+$$
 \mathcal{L}_{adv} = \operatorname{BCE}(D(G(x)), 1)
-\]
+$$
 
 and
 
-\[
+$$
 \mathcal{L}_{L1} = \frac{1}{N}\sum_{i=1}^{N}
 \left|G(x)_i-y_i\right|
-\]
+$$
 
 Therefore, the implemented generator objective is:
 
-\[
+$$
 \boxed{\mathcal{L}_{G} =
 \operatorname{BCE}(D(G(x)), 1)
 + 100\cdot\operatorname{L1}(G(x),y)}
-\]
+$$
 
 The adversarial term encourages realistic-looking outputs, while the L1 term encourages the generated RGB image to remain close to its paired target.
 
