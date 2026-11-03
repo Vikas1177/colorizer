@@ -47,14 +47,24 @@ Let:
 - $D(\cdot)$ be the discriminator,
 - $\lambda = 100$ be the reconstruction-loss weight.
 
-### Discriminator loss
+### Discriminator Loss
 
-The discriminator uses binary cross-entropy (BCE). Real labels are smoothed from `1.0` to `0.9` using one-sided label smoothing, while generated-image labels are `0`.
+The discriminator uses Binary Cross-Entropy (BCE). Real labels are smoothed from `1.0` to `0.9` using one-sided label smoothing, while generated-image labels are `0`.
+
+The discriminator loss is:
 
 $$
-\mathcal{L}_{D} = \operatorname{BCE}(D(y), 0.9)
-+ \operatorname{BCE}(D(G(x)), 0)
+\mathcal{L}_D =
+\mathrm{BCE}(D(y), 0.9)
++
+\mathrm{BCE}(D(G(x)), 0)
 $$
+
+where:
+- $D(y)$ represents the discriminator's prediction for real images.
+- $D(G(x))$ represents its prediction for generated images.
+- $0.9$ is the smoothed real label.
+- $0$ is the fake label.
 
 ### Generator Loss
 
