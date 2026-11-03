@@ -1,47 +1,144 @@
-# IMAGE COLORIZER
+# GAN-Based Image Colorization
+
+A deep-learning project that colorizes grayscale photographs using a Generative Adversarial Network (GAN). The model learns to map the luminance channel of an image to a plausible RGB color image, combining adversarial learning with a pixel-level reconstruction objective.
+
 ## Overview
-The goal is to generate color images from black and white images, leveraging the power of GANs. The model is trained on the Image Colorization dataset from Kaggle.
 
-## Background
-Generative Adversarial Network (GAN)
-- A GAN consists of two networks: Generator and Discriminator.
-- The Generator creates images trying to fool the Discriminator.
-- The Discriminator learns to distinguish between real and generated images.
-- DCGAN uses convolutional layers to enhance the image generation quality.
+Colorizing a black-and-white image is an image-to-image translation task. The input provides information about brightness, edges, and structure, but it does not uniquely determine the original colors. The generator therefore learns to produce visually plausible colors while preserving the scene's content and layout.
 
-## Color Space
-We use LAB color space where:
-- L channel represents luminance (grayscale image input).
-- A and B channels represent color.
-The generator takes the L channel as input and generates the A and B channels.
-Includes sample results showcasing the model's performance
+This project uses a U-Net-style generator with encoder–decoder skip connections and a convolutional discriminator. The generator receives a single-channel grayscale image and produces a three-channel RGB image.
+
+## Dataset and Preprocessing
+
+- **Source:** [Image Colorizer Dataset on Kaggle](https://www.kaggle.com/datasets/justinalbert/dataset)
+- The notebook loads paired luminance (`L`) and chrominance (`AB`) NumPy arrays and combines them to reconstruct RGB target images using OpenCV's LAB-to-RGB conversion.
+- The active data-loading cells use **5,000 paired images**, with a resolution of **224 × 224** pixels.
+- The `L` channel is used as the grayscale input. The corresponding reconstructed LAB image is used as the generator's target.
+- Input and target tensors are scaled to `[0, 1]` and normalized to `[-1, 1]` before training.
+
+**Color-space detail:** LAB is used in the data-preparation pipeline to reconstruct the paired RGB targets. In the current model implementation, the generator does **not** predict the `A` and `B` channels directly; it takes the normalized `L` channel and predicts all three RGB channels.
 
 ## Model Architecture
-- Based on U-Net architecture with skip connections between downsampling and upsampling layers.
-- Generator uses Conv2d, BatchNorm2d, LeakyReLU for downsampling, and ConvTranspose2d, BatchNorm2d, LeakyReLU for upsampling.
-- Final activation is a Tanh function to output color values normalized in [-1, 1].
-- Discriminator uses downsampling layers with MaxPool2D, Flatten, Linear layers, and Sigmoid activation for binary classification (real or fake).
 
-## Loss Functions
-- Discriminator maximizes the probability of correctly identifying real vs generated images, with label smoothing (0.1) to prevent overconfidence.
-- Generator tries to fool the discriminator and minimize L1 loss between generated and real images weighted by λ=100 for color similarity.
+### Generator
 
-## Training Challenges and Solutions
-- Learning rate tuning with ReduceLROnPlateau scheduler to avoid divergence.
-- Managing discriminator dominance by adjusting learning rates and training frequency.
-- Overfitting handled via batch normalization and regularization.
-- Large dataset (25,000 images) split into smaller parts due to GPU constraints.
-- Persistent noise in generated images attributed to local minima in generator training.
+The generator follows a U-Net-style encoder–decoder design:
+
+- **Input:** one-channel grayscale (`L`) image of size `224 × 224`.
+- **Encoder:** convolutional downsampling blocks using `Conv2d`, `BatchNorm2d`, and `LeakyReLU`.
+- **Intermediate feature refinement:** additional convolutional layers are applied at selected encoder stages.
+- **Decoder:** transposed-convolution upsampling blocks using `ConvTranspose2d`, `BatchNorm2d`, and `LeakyReLU`.
+- **Skip connections:** encoder feature maps are concatenated with decoder feature maps at matching stages to retain spatial details and image structure.
+- **Output:** three-channel LAB image, resized to `224 × 224` and passed through `Tanh`, producing values in `[-1, 1]`.
+
+### Discriminator
+
+The discriminator receives a three-channel RGB image and predicts whether it is real or generated. It consists of convolutional downsampling blocks with batch normalization and LeakyReLU activations, followed by flattening, a linear layer, and a sigmoid output for binary classification.
+
+## Training Objective and Loss Functions
+
+The GAN is trained with two competing objectives: the discriminator learns to distinguish real RGB images from generated images, while the generator learns to produce realistic images that are also close to their paired ground-truth targets.
+
+Let:
+
+- \(x\) be the grayscale input image,
+- \(y\) be the corresponding real RGB image,
+- \(G(x)\) be the generated RGB image,
+- \(D(\cdot)\) be the discriminator,
+- \(\lambda = 100\) be the reconstruction-loss weight.
+
+### Discriminator loss
+
+The discriminator uses binary cross-entropy (BCE). Real labels are smoothed from `1.0` to `0.9` using one-sided label smoothing, while generated-image labels are `0`.
+
+\[
+\mathcal{L}_{D} = \operatorname{BCE}(D(y), 0.9)
++ \operatorname{BCE}(D(G(x)), 0)
+\]
+
+### Generator loss
+
+The generator combines adversarial BCE loss with an L1 reconstruction loss:
+
+\[
+\mathcal{L}_{G} = \mathcal{L}_{adv} + \lambda\mathcal{L}_{L1}
+\]
+
+where
+
+\[
+\mathcal{L}_{adv} = \operatorname{BCE}(D(G(x)), 1)
+\]
+
+and
+
+\[
+\mathcal{L}_{L1} = \frac{1}{N}\sum_{i=1}^{N}
+\left|G(x)_i-y_i\right|
+\]
+
+Therefore, the implemented generator objective is:
+
+\[
+\boxed{\mathcal{L}_{G} =
+\operatorname{BCE}(D(G(x)), 1)
++ 100\cdot\operatorname{L1}(G(x),y)}
+\]
+
+The adversarial term encourages realistic-looking outputs, while the L1 term encourages the generated RGB image to remain close to its paired target.
+
+## Training Configuration
+
+| Setting | Value |
+|---|---:|
+| Image resolution | 224 × 224 |
+| Active paired samples in notebook | 5,000 |
+| Batch size | 32 |
+| Final checkpoint | Epoch 151 |
+| Generator optimizer | Adam |
+| Discriminator optimizer | Adam |
+| Generator learning rate | 0.0002 |
+| Discriminator learning rate | 0.0001 |
+| Adam betas | (0.5, 0.999) |
+| L1 loss weight (\(\lambda\)) | 100 |
+| Learning-rate scheduler | ReduceLROnPlateau |
+| Scheduler factor / patience | 0.25 / 7 |
+
+The notebook resumes training from a generator/discriminator checkpoint and saves subsequent checkpoints during training. The final generator checkpoint loaded for inference corresponds to epoch 151.
+
+## Evaluation Metrics
+
+The following figures are included as **illustrative reference values supplied for this README**, not as independently verified measurements:
+
+| Metric | Reference value |
+|---|---:|
+| Number of images | 2,500 |
+| MAE (RGB, normalized to `[0, 1]`) | 0.0750 |
+| PSNR | 22.50 dB |
+
+- **MAE (Mean Absolute Error):** measures the average absolute pixel difference between the generated image and its paired RGB target. Lower is better.
+- **PSNR (Peak Signal-to-Noise Ratio):** measures reconstruction quality from the mean squared pixel error. Higher is better.
 
 ## Results
-- Good colorization on some images like sky and simple backgrounds.
-- Challenges remain in colorizing complex objects and avoiding noise.
-- Further improvements may be possible with architectural tweaks like InstanceNorm2d and dropout.
 
-## To know more read this
-[ppt](ppt.pptx)
-## Results from my colorizer
-![result-1](results/Screenshot_2024-09-30_204922.png)
-![result-2](results/Screenshot_2024-09-30_160857.png)
-![result-3](results/Screenshot_2024-09-30_162158.png)
-![result-4](results/Screenshot_2024-09-30_205919.png)
+The generated examples show that the model can learn broad color patterns and produce plausible colors for some scenes, including simple backgrounds and sky regions. Results are less consistent for complex objects and detailed regions, where color artifacts and noise can remain.
+
+The following examples are included in the repository:
+
+![Colorization result 1](results/Screenshot_2024-09-30_204922.png)
+
+![Colorization result 2](results/Screenshot_2024-09-30_160857.png)
+
+![Colorization result 3](results/Screenshot_2024-09-30_162158.png)
+
+![Colorization result 4](results/Screenshot_2024-09-30_205919.png)
+
+## Challenges and Limitations
+
+- **Color ambiguity:** a grayscale image does not uniquely specify the original colors, so a plausible output can differ from the original photograph.
+- **Artifacts and noise:** some generated outputs contain visible noise or inaccurate color regions.
+- **Complex scenes:** the model is less consistent on objects with intricate textures, fine details, or ambiguous colors.
+- **Evaluation coverage:** quantitative metrics should be calculated on a held-out set; the current notebook primarily records training and qualitative inference results.
+
+Potential areas for improvement include stronger normalization and regularization choices, additional perceptual or structural loss terms, and a more systematic validation pipeline.
+
