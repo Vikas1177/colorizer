@@ -89,24 +89,6 @@ $$
 $$
 The adversarial term encourages realistic-looking outputs, while the L1 term encourages the generated RGB image to remain close to its paired target.
 
-## Training Configuration
-
-| Setting | Value |
-|---|---:|
-| Image resolution | 224 × 224 |
-| Active paired samples in notebook | 5,000 |
-| Batch size | 32 |
-| Final checkpoint | Epoch 151 |
-| Generator optimizer | Adam |
-| Discriminator optimizer | Adam |
-| Generator learning rate | 0.0002 |
-| Discriminator learning rate | 0.0001 |
-| Adam betas | (0.5, 0.999) |
-| L1 loss weight (\(\lambda\)) | 100 |
-| Learning-rate scheduler | ReduceLROnPlateau |
-| Scheduler factor / patience | 0.25 / 7 |
-
-The notebook resumes training from a generator/discriminator checkpoint and saves subsequent checkpoints during training. The final generator checkpoint loaded for inference corresponds to epoch 151.
 
 ## Evaluation Metrics
 
