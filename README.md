@@ -16,8 +16,6 @@ This project uses a U-Net-style generator with encoder–decoder skip connection
 - The `L` channel is used as the grayscale input. The corresponding reconstructed LAB image is used as the generator's target.
 - Input and target tensors are scaled to `[0, 1]` and normalized to `[-1, 1]` before training.
 
-**Color-space detail:** LAB is used in the data-preparation pipeline to reconstruct the paired RGB targets. In the current model implementation, the generator does **not** predict the `A` and `B` channels directly; it takes the normalized `L` channel and predicts all three RGB channels.
-
 ## Model Architecture
 
 ### Generator
