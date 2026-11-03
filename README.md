@@ -56,35 +56,37 @@ $$
 + \operatorname{BCE}(D(G(x)), 0)
 $$
 
-### Generator loss
+### Generator Loss
 
 The generator combines adversarial BCE loss with an L1 reconstruction loss:
 
 $$
-\mathcal{L}_{G} = \mathcal{L}_{adv} + \lambda\mathcal{L}_{L1}
+\mathcal{L}_G = \mathcal{L}_{adv} + \lambda \mathcal{L}_{L1}
 $$
 
-where
+where,
+
+**Adversarial Loss:**
 
 $$
-\mathcal{L}_{adv} = \operatorname{BCE}(D(G(x)), 1)
+\mathcal{L}_{adv} = \mathrm{BCE}(D(G(x)), 1)
 $$
 
-and
+**L1 Reconstruction Loss:**
 
 $$
-\mathcal{L}_{L1} = \frac{1}{N}\sum_{i=1}^{N}
-\left|G(x)_i-y_i\right|
+\mathcal{L}_{L1} = \frac{1}{N}\sum_{i=1}^{N}|G(x)_i-y_i|
 $$
 
-Therefore, the implemented generator objective is:
+The final generator objective is:
 
 $$
-\boxed{\mathcal{L}_{G} =
-\operatorname{BCE}(D(G(x)), 1)
-+ 100\cdot\operatorname{L1}(G(x),y)}
+\boxed{
+\mathcal{L}_G =
+\mathrm{BCE}(D(G(x)),1)
++ 100 \times \mathrm{L1}(G(x),y)
+}
 $$
-
 The adversarial term encourages realistic-looking outputs, while the L1 term encourages the generated RGB image to remain close to its paired target.
 
 ## Training Configuration
