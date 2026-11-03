@@ -98,12 +98,9 @@ $$
 **Final Generator Objective:**
 
 $$
-\boxed{
-\mathcal{L}_G =
-\mathrm{BCE}(D(G(x)),1)
-+ 100 \cdot \mathrm{L1}(G(x),y)
-}
+L_G = BCE(D(G(x)), 1) + 100 \times L1(G(x), y)
 $$
+
 
 The adversarial term encourages realistic-looking outputs, while the L1 term encourages the generated RGB image to remain close to its paired ground-truth image.
 
